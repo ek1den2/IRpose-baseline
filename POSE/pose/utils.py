@@ -8,6 +8,8 @@ colors = [(255, 0, 0), (255, 85, 0), (255, 170, 0), (255, 255, 0), (170, 255, 0)
 skeleton = [[0, 1], [0, 4], [1, 4], [1, 2], [4, 5], [2, 3], [5, 6],
             [1, 7], [4, 10], [7, 10], [7, 8], [10, 11], [8, 9], [11, 12]]
 
+
+# cocoデータセット17ポイント
 # colors = [(255, 0, 127), (254, 37, 103), (251, 77, 77), (248, 115, 51),
 #                (242, 149, 25), (235, 180, 0), (227, 205, 24), (217, 226, 50),
 #                (206, 242, 76), (193, 251, 102), (179, 254, 128), (165, 251, 152),
@@ -102,7 +104,8 @@ def draw_heatmap(img, heatmap, mask_alpha=0.4):
 
 def resize_with_padding(image, target_width, target_height):
     """
-    リサイズとパディングを行い、パディング情報も一緒に返すバージョン。
+    リサイズ&パディング
+
     """
     original_height, original_width = image.shape[:2]
     ratio_w = target_width / original_width
@@ -127,7 +130,6 @@ def resize_with_padding(image, target_width, target_height):
     
     padded_image[top:top + new_height, left:left + new_width] = resized_image
 
-    # パディングされた画像と、後処理で必要になる情報を返す
     padding_info = {
         "new_width": new_width,
         "new_height": new_height,
