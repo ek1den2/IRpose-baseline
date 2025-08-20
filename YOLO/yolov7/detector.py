@@ -3,14 +3,15 @@ import cv2
 import numpy as np
 import onnxruntime
 
-from YOLO.yolo.utils import xywh2xyxy, nms, draw_detections
+from YOLO.yolov7.utils import xywh2xyxy, nms, draw_detections
 
 
 class PersonDetector:
 
-    def __init__(self, path, conf_thres=0.5, iou_thres=0.5):
+    def __init__(self, path, conf_thres=0.7, iou_thres=0.5, official_nms=False):
         self.conf_threshold = conf_thres
         self.iou_threshold = iou_thres
+        self.official_nms = official_nms
 
         # Initialize model
         self.initialize_model(path)
@@ -26,14 +27,21 @@ class PersonDetector:
         self.get_input_details()
         self.get_output_details()
 
+        self.has_postprocess = 'score' in self.output_names or self.official_nms
+
+
     def detect_objects(self, image):
         input_tensor = self.prepare_input(image)
 
         # Perform inference on the image
-        output = self.inference(input_tensor)
+        outputs = self.inference(input_tensor)
 
-        # Process output data
-        self.boxes, self.scores, self.class_ids = self.process_output(output)
+        if self.has_postprocess:
+            self.boxes, self.scores, self.class_ids = self.parse_processed_output(outputs)
+
+        else:
+            # Process output data
+            self.boxes, self.scores, self.class_ids = self.process_output(outputs)
 
         return self.boxes, self.scores, self.class_ids
 
@@ -55,13 +63,13 @@ class PersonDetector:
 
     def inference(self, input_tensor):
         start = time.perf_counter()
-        outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})[0]
+        outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})
 
         # print(f"Inference time: {(time.perf_counter() - start)*1000:.2f} ms")
         return outputs
 
     def process_output(self, output):
-        predictions = np.squeeze(output)
+        predictions = np.squeeze(output[0])
 
         # Filter out object confidence scores below threshold
         obj_conf = predictions[:, 4]
@@ -78,6 +86,9 @@ class PersonDetector:
         predictions = predictions[scores > self.conf_threshold]
         scores = scores[scores > self.conf_threshold]
 
+        if len(scores) == 0:
+            return [], [], []
+
         # Get the class with the highest confidence
         class_ids = np.argmax(predictions[:, 5:], axis=1)
 
@@ -89,20 +100,60 @@ class PersonDetector:
 
         return boxes[indices], scores[indices], class_ids[indices]
 
+    def parse_processed_output(self, outputs):
+
+        #Pinto's postprocessing is different from the official nms version
+        if self.official_nms:
+            scores = outputs[0][:,-1]
+            predictions = outputs[0][:, [0,5,1,2,3,4]]
+        else:
+            scores = np.squeeze(outputs[0], axis=1)
+            predictions = outputs[1]
+        # Filter out object scores below threshold
+        valid_scores = scores > self.conf_threshold
+        predictions = predictions[valid_scores, :]
+        scores = scores[valid_scores]
+
+        if len(scores) == 0:
+            return [], [], []
+
+        # Extract the boxes and class ids
+        # TODO: Separate based on batch number
+        batch_number = predictions[:, 0]
+        class_ids = predictions[:, 1].astype(int)
+        boxes = predictions[:, 2:]
+
+        # In postprocess, the x,y are the y,x
+        if not self.official_nms:
+            boxes = boxes[:, [1, 0, 3, 2]]
+
+        # Rescale boxes to original image dimensions
+        boxes = self.rescale_boxes(boxes)
+
+        return boxes, scores, class_ids
+
     def extract_boxes(self, predictions):
         # Extract boxes from predictions
         boxes = predictions[:, :4]
 
         # Scale boxes to original image dimensions
-        boxes /= np.array([self.input_width, self.input_height, self.input_width, self.input_height])
-        boxes *= np.array([self.img_width, self.img_height, self.img_width, self.img_height])
+        boxes = self.rescale_boxes(boxes)
 
         # Convert boxes to xyxy format
         boxes = xywh2xyxy(boxes)
 
         return boxes
 
+    def rescale_boxes(self, boxes):
+
+        # Rescale boxes to original image dimensions
+        input_shape = np.array([self.input_width, self.input_height, self.input_width, self.input_height])
+        boxes = np.divide(boxes, input_shape, dtype=np.float32)
+        boxes *= np.array([self.img_width, self.img_height, self.img_width, self.img_height])
+        return boxes
+
     def draw_detections(self, image, draw_scores=True, mask_alpha=0.4):
+
         return draw_detections(image, self.boxes, self.scores,
                                self.class_ids, mask_alpha)
 
@@ -120,18 +171,18 @@ class PersonDetector:
 
 
 if __name__ == '__main__':
-    model_path = "/Users/masuryui/Workspace/YOLOv6/models/yolov6s_base_bs1.onnx"
+    model_path = "/Users/masuryui/Workspace/YOLOv6/models/best.onnx"
 
-    # Initialize YOLOv6 object detector
-    yolov6_detector = PersonDetector(model_path, conf_thres=0.3, iou_thres=0.5)
+    # Initialize YOLOv7 object detector
+    yolov7_detector = YOLOv7(model_path, conf_thres=0.3, iou_thres=0.5)
 
     img = cv2.imread("/Users/masuryui/Workspace/IRpose/demo/demo5.jpeg")
 
     # Detect Objects
-    yolov6_detector(img)
+    yolov7_detector(img)
 
     # Draw detections
-    combined_img = yolov6_detector.draw_detections(img)
+    combined_img = yolov7_detector.draw_detections(img)
     cv2.namedWindow("Output", cv2.WINDOW_NORMAL)
     cv2.imshow("Output", combined_img)
     cv2.waitKey(0)
