@@ -8,7 +8,7 @@ from POSE.pose.utils import filter_person_detections
 
 cap = cv2.VideoCapture(0)
 
-obje = PersonDetector("/Users/masuryui/Workspace/IRPose/YOLO/models/yolov7.onnx")
+obje = PersonDetector("/Users/masuryui/Workspace/IRPose/YOLO/models/best.onnx")
 
 cv2.namedWindow("Model Output", cv2.WINDOW_NORMAL)
 frame_times = deque(maxlen=60)

@@ -2,13 +2,13 @@ import cv2
 from time import time
 from collections import deque
 
-from YOLO.yolo.detector import PersonDetector
+from YOLO.yolov7.detector import PersonDetector
 from POSE.pose.pose_estimator import PoseEstimator
 from POSE.pose.utils import filter_person_detections
 
 cap = cv2.VideoCapture(0)
 
-obje = PersonDetector("/Users/masuryui/Workspace/IRPose/YOLO/models/yolov6s_base_bs1.onnx")
+obje = PersonDetector("/Users/masuryui/Workspace/IRPose/YOLO/models/yolov7.onnx")
 pose = PoseEstimator("./POSE/models/pose_resnet.onnx", conf_thres=0.3)
 
 cv2.namedWindow("Model Output", cv2.WINDOW_NORMAL)

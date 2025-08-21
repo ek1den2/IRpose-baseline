@@ -171,12 +171,12 @@ class PersonDetector:
 
 
 if __name__ == '__main__':
-    model_path = "/Users/masuryui/Workspace/YOLOv6/models/best.onnx"
+    model_path = "/Users/masuryui/Workspace/IRPose/YOLO/models/best.onnx"
 
     # Initialize YOLOv7 object detector
-    yolov7_detector = YOLOv7(model_path, conf_thres=0.3, iou_thres=0.5)
+    yolov7_detector = PersonDetector(model_path, conf_thres=0.3, iou_thres=0.5)
 
-    img = cv2.imread("/Users/masuryui/Workspace/IRpose/demo/demo5.jpeg")
+    img = cv2.imread("/Users/masuryui/Workspace/IRpose/POSE/demo/irdemo.png")
 
     # Detect Objects
     yolov7_detector(img)

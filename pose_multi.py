@@ -2,7 +2,7 @@ import argparse
 import cv2
 from pathlib import Path
 
-from YOLO.yolo.detector import PersonDetector
+from YOLO.yolov7.detector import PersonDetector
 from POSE.pose.pose_estimator import PoseEstimator
 from POSE.pose.utils import filter_person_detections
 
@@ -17,7 +17,7 @@ args = parser.parse_args()
 
 
 # モデルの初期化
-obje = PersonDetector("/Users/masuryui/Workspace/IRPose/YOLO/models/yolov6s_base_bs1.onnx")
+obje = PersonDetector("/Users/masuryui/Workspace/IRPose/YOLO/models/best.onnx")
 pose = PoseEstimator(args.model, conf_thres=args.thres)
 
 
@@ -28,17 +28,14 @@ detections = obje(np_img)
 
 ret, person_detections = filter_person_detections(detections)
 
-# 可視化
-if ret:
 
-    # Estimate the pose in the image
-    total_heatmap, peaks = pose(np_img, person_detections)
+# Estimate the pose in the image
+total_heatmap, peaks = pose(np_img, person_detections)
 
-    # Draw Model Output
-    img = pose.draw_pose(np_img)
+# Draw Model Output
+img = obje.draw_detections(np_img)
+img = pose.draw_pose(img)
 
-    # Draw detections
-    # img = person_detector.draw_detections(img)
 
 cv2.namedWindow("Model Output", cv2.WINDOW_NORMAL)
 cv2.imshow("Model Output", img)

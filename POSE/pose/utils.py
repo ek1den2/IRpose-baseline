@@ -25,9 +25,9 @@ skeleton = [[0, 1], [0, 4], [1, 4], [1, 2], [4, 5], [2, 3], [5, 6],
 def filter_person_detections(detections):
     boxes, scores, class_ids = detections
 
-    boxes = boxes[class_ids == 0]
-    scores = scores[class_ids == 0]
-    class_ids = class_ids[class_ids == 0]
+    boxes = boxes[class_ids == 1]
+    scores = scores[class_ids == 1]
+    class_ids = class_ids[class_ids == 1]
 
     return len(scores)>0, [boxes, scores, class_ids]
 
@@ -52,6 +52,7 @@ def draw_skeleton(img, keypoints):
 
     scale = 1/150
     thickness = min(int(img.shape[0]*scale), int(img.shape[1]*scale))
+    thickness = max(thickness, 1)
 
     for i, segment in enumerate(skeleton):
         point1_id, point2_id = segment
